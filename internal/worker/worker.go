@@ -61,7 +61,7 @@ func (w *YoutubeWorker) fetchAndStoreVideos() error {
 	// Default to 10 hours ago in UTC
 	var lastFetchedTime string
 	if lastPublishedTime == nil {
-		lastFetchedTime = time.Now().UTC().Add(-10 * time.Hour).Format(time.RFC3339)
+		lastFetchedTime = time.Now().UTC().Add((-1 * 2 * 24) * time.Hour).Format(time.RFC3339)
 	} else {
 		lastFetchedTime = lastPublishedTime.In(time.UTC).Add(1 * time.Minute).Format(time.RFC3339)
 	}
@@ -83,9 +83,7 @@ func (w *YoutubeWorker) fetchAndStoreVideos() error {
 			PublishedAt:      item.Snippet.PublishedAt,
 		}
 
-		if err := w.service.CreateVideo(video); err != nil {
-			log.Printf("Error creating video %s: %v", video.VideoId, err)
-		}
+		w.service.CreateVideo(video)
 	}
 
 	return nil

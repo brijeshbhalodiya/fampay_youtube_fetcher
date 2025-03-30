@@ -54,6 +54,58 @@ func (r *VideoRepo) Create(video *pojo.VideoMetaData) error {
 	return nil
 }
 
+func (r *VideoRepo) FindLatest(limit, offset int) ([]pojo.VideoMetaData, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "published_at", Value: -1}}).
+		SetSkip(int64(offset)).
+		SetLimit(int64(limit))
+
+	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var videos []pojo.VideoMetaData
+	if err = cursor.All(ctx, &videos); err != nil {
+		return nil, err
+	}
+
+	return videos, nil
+}
+
+func (r *VideoRepo) Search(query string, limit, offset int) ([]pojo.VideoMetaData, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "published_at", Value: -1}}).
+		SetSkip(int64(offset)).
+		SetLimit(int64(limit))
+
+	filter := bson.M{
+		"$text": bson.M{
+			"$search": query,
+		},
+	}
+
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var videos []pojo.VideoMetaData
+	if err = cursor.All(ctx, &videos); err != nil {
+		return nil, err
+	}
+
+	return videos, nil
+}
+
 func (r *VideoRepo) GetLatestPublishedDate() (*time.Time, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

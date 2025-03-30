@@ -8,7 +8,7 @@ type VideoMetaData struct {
 	Title            string    `json:"title" bson:"title"`
 	Description      string    `json:"description" bson:"description"`
 	PublishedAt      time.Time `json:"published_at" bson:"published_at"`
-	DefaultThumbnail string
+	DefaultThumbnail string    `json:"default_thumbnail" bson:"default_thumbnail"`
 	CreatedAt        time.Time `json:"created_at" bson:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at" bson:"updated_at"`
 }
