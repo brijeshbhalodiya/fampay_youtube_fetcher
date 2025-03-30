@@ -1,11 +1,11 @@
 package youtube
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 const (
@@ -24,11 +24,22 @@ func NewYoutubeClient(apiKey string) *YoutubeClient {
 	}
 }
 
-func (c *YoutubeClient) FetchVideos(ctx context.Context, query string, maxResults int) (*SearchResponse, error) {
-	url := fmt.Sprintf("%s/search?part=snippet&q=%s&maxResults=%d&type=video&key=%s",
-		BASE_URL, query, maxResults, c.apiKey)
+func (c *YoutubeClient) FetchVideos(query string, maxResults int, fetchVideoAfterUTC string) (*SearchResponse, error) {
+	parsedUrl, err := url.Parse(BASE_URL + "/search")
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	queryParams := parsedUrl.Query()
+	queryParams.Set("publishedAfter", fetchVideoAfterUTC)
+	queryParams.Set("part", "snippet")
+	queryParams.Set("order", "date")
+	queryParams.Set("q", query)
+	queryParams.Set("maxResults", "5")
+	queryParams.Set("key", c.apiKey)
+	parsedUrl.RawQuery = queryParams.Encode()
+
+	req, err := http.NewRequest("GET", parsedUrl.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

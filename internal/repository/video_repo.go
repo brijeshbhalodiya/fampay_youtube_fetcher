@@ -1,4 +1,4 @@
-package db
+package repository
 
 import (
 	"context"
@@ -10,11 +10,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type videoRepo struct {
+type VideoRepo struct {
 	collection *mongo.Collection
 }
 
-func NewVideoRepo(db *mongo.Database) *videoRepo {
+func NewVideoRepo(db *mongo.Database) *VideoRepo {
 	collection := db.Collection("videos")
 
 	// Create indexes
@@ -22,6 +22,10 @@ func NewVideoRepo(db *mongo.Database) *videoRepo {
 		{
 			Keys:    bson.D{{Key: "published_at", Value: -1}},
 			Options: options.Index().SetName("published_at_idx"),
+		},
+		{
+			Keys:    bson.D{{Key: "video_id", Value: -1}},
+			Options: options.Index().SetName("video_id_idx").SetUnique(true),
 		},
 		{
 			Keys:    bson.D{{Key: "title", Value: "text"}, {Key: "description", Value: "text"}},
@@ -32,10 +36,10 @@ func NewVideoRepo(db *mongo.Database) *videoRepo {
 		panic(err)
 	}
 
-	return &videoRepo{collection: collection}
+	return &VideoRepo{collection: collection}
 }
 
-func (r *videoRepo) Create(video *pojo.VideoMetaData) error {
+func (r *VideoRepo) Create(video *pojo.VideoMetaData) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -48,4 +52,30 @@ func (r *videoRepo) Create(video *pojo.VideoMetaData) error {
 	}
 
 	return nil
+}
+
+func (r *VideoRepo) GetLatestPublishedDate() (*time.Time, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "published_at", Value: -1}}).
+		SetLimit(int64(1))
+
+	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var videos []pojo.VideoMetaData
+	if err = cursor.All(ctx, &videos); err != nil {
+		return nil, err
+	}
+
+	if len(videos) == 0 {
+		return nil, nil
+	}
+
+	return &videos[0].PublishedAt, nil
 }
