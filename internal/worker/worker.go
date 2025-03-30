@@ -71,8 +71,6 @@ func (w *YoutubeWorker) fetchAndStoreVideos() error {
 		return err
 	}
 
-	log.Printf("Got %d videos", len(resp.Items))
-
 	for _, item := range resp.Items {
 		video := &pojo.VideoMetaData{
 			Id:               uuid.New().String(),
